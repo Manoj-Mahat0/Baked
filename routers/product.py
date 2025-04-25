@@ -49,3 +49,31 @@ def get_products_by_store(store_id: int, db: Session = Depends(get_db)):
         }
         for p in products
     ]
+
+# ✅ Get all categories
+@router.get("/categories")
+def get_all_categories(db: Session = Depends(get_db)):
+    categories = db.query(Category).all()
+    return [
+        {
+            "id": cat.id,
+            "name": cat.name,
+            "store_id": cat.store_id
+        }
+        for cat in categories
+    ]
+
+# ✅ Get all products
+@router.get("/products")
+def get_all_products(db: Session = Depends(get_db)):
+    products = db.query(Product).all()
+    return [
+        {
+            "id": p.id,
+            "name": p.name,
+            "price": p.price,
+            "category_id": p.category_id,
+            "store_id": p.store_id
+        }
+        for p in products
+    ]
