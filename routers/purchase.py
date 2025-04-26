@@ -66,3 +66,11 @@ def get_total_sales(db: Session = Depends(get_db)):
     return {
         "total_sales": total_sales
     }
+
+@router.get("/stats/total-sales/{store_id}")
+def get_total_sales_by_store(store_id: int, db: Session = Depends(get_db)):
+    total_sales = db.query(Purchase).filter(Purchase.store_id == store_id).count()
+    return {
+        "store_id": store_id,
+        "total_sales": total_sales
+    }
