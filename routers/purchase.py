@@ -59,3 +59,10 @@ def make_purchase(data: PurchaseRequest, db: Session = Depends(get_db)):
         "amount_paid": final_price,
         "remaining_loyalty_points": user.loyalty_points
     }
+
+@router.get("/stats/total-sales")
+def get_total_sales(db: Session = Depends(get_db)):
+    total_sales = db.query(Purchase).count()
+    return {
+        "total_sales": total_sales
+    }
