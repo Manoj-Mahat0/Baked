@@ -81,13 +81,4 @@ def get_total_orders(db: Session = Depends(get_db)):
     return {
         "total_orders": total_orders
     }
-
-@router.get("/stats/total-loyalty-redeemed")
-def get_total_loyalty_points_redeemed(db: Session = Depends(get_db)):
-    total_points = db.query(Purchase).with_entities(
-        func.sum(Purchase.points_redeemed)
-    ).scalar() or 0
-
-    return {
-        "total_loyalty_points_redeemed": total_points
-    }
+    
