@@ -35,10 +35,11 @@ class Purchase(Base):
     __tablename__ = "purchases"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    item_name = Column(String(100), nullable=False)
+    store_id = Column(Integer, ForeignKey("stores.id"))  # ✅ Add this line
+    item_name = Column(String, nullable=False)
     amount = Column(Integer, nullable=False)
     purchase_date = Column(Date)
-    loyalty_used = Column(Integer, default=0)
+    points_redeemed = Column(Integer, default=0)
 
     user = relationship("User", back_populates="purchases")
 
