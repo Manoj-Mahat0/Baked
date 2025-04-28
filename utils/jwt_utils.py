@@ -38,3 +38,10 @@ def get_user_by_token(token: str):
 
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+def decode_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None

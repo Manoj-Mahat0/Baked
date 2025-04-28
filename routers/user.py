@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import Purchase, User
-from utils.jwt_utils import get_user_by_token
+from models import Purchase, Store, User
+from utils.jwt_utils import decode_token, get_user_by_token
 
 router = APIRouter()
 
@@ -76,12 +76,38 @@ def get_user_purchases(phone_number: str, db: Session = Depends(get_db)):
     }
 
 @router.get("/user/me")
-def get_logged_in_user(token: str):  # 👈 token passed explicitly
-    user = get_user_by_token(token)
-    return {
-        "user_id": user.id,
-        "full_name": user.full_name,
-        "phone_number": user.phone_number,
-        "unique_code": user.unique_code,
-        "loyalty_points": user.loyalty_points
-    }
+def get_logged_in_user(token: str, db: Session = Depends(get_db)):
+    payload = decode_token(token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Invalid Token")
+
+    user_id = payload.get("id")
+    role = payload.get("role")
+
+    if user_id is None or role is None:
+        raise HTTPException(status_code=401, detail="Invalid token structure")
+
+    if role == "USER":
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {
+            "user_id": user.id,
+            "store_id": user.store_id,
+            "full_name": user.full_name,
+            "role": role
+        }
+
+    elif role in ["MAIN_STORE", "SUB_STORE"]:
+        store = db.query(Store).filter(Store.id == user_id).first()
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        return {
+            "store_id": store.id,
+            "store_name": store.name,
+            "role": role
+        }
+
+    else:
+        raise HTTPException(status_code=401, detail="Invalid role")
+
