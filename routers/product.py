@@ -114,3 +114,34 @@ def get_categories_by_store(store_id: int, db: Session = Depends(get_db)):
         })
 
     return category_list
+
+@router.get("/products/category-wise/{store_id}")
+def get_products_category_wise(store_id: int, db: Session = Depends(get_db)):
+    categories = db.query(Category).filter(Category.store_id == store_id).all()
+
+    if not categories:
+        return {"message": "No categories found for this store."}
+
+    result = []
+
+    for category in categories:
+        products = db.query(Product).filter(
+            Product.category_id == category.id,
+            Product.store_id == store_id
+        ).all()
+
+        product_list = []
+        for product in products:
+            product_list.append({
+                "id": product.id,
+                "name": product.name,
+                "price": product.price
+            })
+
+        result.append({
+            "category_id": category.id,
+            "category_name": category.name,
+            "products": product_list
+        })
+
+    return result
