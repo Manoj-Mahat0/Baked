@@ -15,16 +15,11 @@ def get_db():
         db.close()
 
 @router.post("/purchase")
-def make_purchase(data: PurchaseRequest, db: Session = Depends(get_db)):
+def make_combined_purchase(data: PurchaseRequest, db: Session = Depends(get_db)):
     # Validate user
     user = db.query(User).filter_by(phone_number=data.phone_number, unique_code=data.unique_code).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found or invalid code")
-
-    # Validate product
-    product = db.query(Product).filter_by(id=data.product_id).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
 
     # Validate requested loyalty usage
     if data.use_loyalty_points > user.loyalty_points:
@@ -32,33 +27,52 @@ def make_purchase(data: PurchaseRequest, db: Session = Depends(get_db)):
     if data.use_loyalty_points > 50:
         raise HTTPException(status_code=400, detail="Maximum 50 loyalty points allowed")
 
-    # Calculate discount
-    discount = data.use_loyalty_points * 0.2
-    final_price = max(product.price - discount, 0)
+    # Fetch all products
+    total_original_price = 0
+    purchase_details = []
 
-    # Update user points
+    for item in data.items:
+        product = db.query(Product).filter_by(id=item.product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product with id {item.product_id} not found")
+        
+        total_original_price += product.price
+
+        purchase_details.append({
+            "product_id": product.id,
+            "product_name": product.name,
+            "price": product.price
+        })
+
+    # Calculate total discount
+    discount = data.use_loyalty_points * 0.2
+    final_price = max(total_original_price - discount, 0)
+
+    # Update user loyalty points
     user.loyalty_points -= data.use_loyalty_points
 
-    # Save purchase
-    purchase = Purchase(
-        user_id=user.id,
-        item_name=product.name,
-        amount=final_price,
-        purchase_date=date.today()
-    )
+    # Save purchases
+    for detail in purchase_details:
+        purchase = Purchase(
+            user_id=user.id,
+            item_name=detail["product_name"],
+            amount=detail["price"],  # save original price (or you can save distributed discount here)
+            purchase_date=date.today()
+        )
+        db.add(purchase)
 
-    db.add(purchase)
     db.commit()
-    db.refresh(purchase)
 
     return {
         "message": "Purchase successful",
-        "original_price": product.price,
+        "total_original_price": total_original_price,
         "loyalty_used": data.use_loyalty_points,
         "discount": discount,
-        "amount_paid": final_price,
-        "remaining_loyalty_points": user.loyalty_points
+        "final_amount_paid": final_price,
+        "remaining_loyalty_points": user.loyalty_points,
+        "products": purchase_details
     }
+
 
 @router.get("/stats/total-sales")
 def get_total_sales(db: Session = Depends(get_db)):

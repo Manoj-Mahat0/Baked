@@ -1,6 +1,8 @@
 from typing import Optional
 from pydantic import BaseModel
 from datetime import date
+from typing import List
+
 
 class MainStoreBase(BaseModel):
     name: str
@@ -46,9 +48,12 @@ class ProductCreate(BaseModel):
     category_id: int
     store_id: int
 
+
+class PurchaseItem(BaseModel):
+    product_id: int
+
 class PurchaseRequest(BaseModel):
     phone_number: str
     unique_code: str
-    product_id: int
-    use_loyalty_points: int  # how many points user wants to apply (max 50)
-
+    use_loyalty_points: int
+    items: List[PurchaseItem]
