@@ -55,5 +55,6 @@ class PurchaseItem(BaseModel):
 class PurchaseRequest(BaseModel):
     phone_number: str
     unique_code: str
-    use_loyalty_points: int
     items: List[PurchaseItem]
+    use_loyalty_points: Optional[int] = 0
+    
